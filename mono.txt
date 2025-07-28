@@ -1,0 +1,69 @@
+substitution_key = {
+    'a': 'q', 'b': 'w', 'c': 'e', 'd': 'r', 'e': 't', 'f': 'y',
+    'g': 'u', 'h': 'i', 'i': 'o', 'j': 'p', 'k': 'a', 'l': 's',
+    'm': 'd', 'n': 'f', 'o': 'g', 'p': 'h', 'q': 'j', 'r': 'k',
+    's': 'l', 't': 'z', 'u': 'x', 'v': 'c', 'w': 'v', 'x': 'b',
+    'y': 'n', 'z': 'm'
+}
+
+reverse_key = {v: k for k, v in substitution_key.items()}
+
+def encrypt(text, key):
+    text = text.lower()
+    result = ""
+    for ch in text:
+        if ch in key:
+            result += key[ch]
+        else:
+            result += ch
+    return result
+
+def decrypt(text, key):
+    text = text.lower()
+    result = ""
+    for ch in text:
+        if ch in key:
+            result += key[ch]
+        else:
+            result += ch
+    return result
+
+def frequency_analysis(text):
+    text = text.lower()
+    counts = {}
+    total = 0
+    for ch in text:
+        if 'a' <= ch <= 'z':
+            counts[ch] = counts.get(ch, 0) + 1
+            total += 1
+    if total == 0:
+        print("No letters found for analysis.")
+        return
+  
+    sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+    print("Letter Frequency Analysis:")
+    for letter, count in sorted_counts:
+        freq = (count / total) * 100
+        print(f"{letter}: {freq:.2f}%")
+
+while True:
+    choice = input("\nChoose option - (e) Encrypt, (d) Decrypt, (f) Frequency Analysis, (q) Quit: ").lower()
+
+    if choice == 'e':
+        plaintext = input("Enter text to encrypt: ")
+        print("Encrypted text:", encrypt(plaintext, substitution_key))
+
+    elif choice == 'd':
+        ciphertext = input("Enter text to decrypt: ")
+        print("Decrypted text:", decrypt(ciphertext, reverse_key))
+
+    elif choice == 'f':
+        text = input("Enter text for frequency analysis: ")
+        frequency_analysis(text)
+
+    elif choice == 'q':
+        print("exit")
+        break
+
+    else:
+        print("Invalid choice. Please enter e, d, f, or q.")

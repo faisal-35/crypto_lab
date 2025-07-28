@@ -1,0 +1,97 @@
+p = 97
+a = 2
+b = 3
+
+def mod_inverse(k, p):
+    for i in range(1, p):
+        if (k * i) % p == 1:
+            return i
+    return None
+
+def is_on_curve(x, y):
+    return (y * y) % p == (x ** 3 + a * x + b) % p
+
+def point_add(P, Q):
+    if P is None: return Q
+    if Q is None: return P
+    x1, y1 = P
+    x2, y2 = Q
+    if x1 == x2 and y1 != y2:
+        return None
+    if x1 == x2 and y1 == y2:
+        s_num = (3 * x1 * x1 + a) % p
+        s_den = (2 * y1) % p
+    else:
+        s_num = (y2 - y1) % p
+        s_den = (x2 - x1) % p
+    inv = mod_inverse(s_den, p)
+    if inv is None: return None
+    s = (s_num * inv) % p
+    x3 = (s * s - x1 - x2) % p
+    y3 = (s * (x1 - x3) - y1) % p
+    return (x3, y3)
+
+def scalar_mult(n, P):
+    R = None
+    for _ in range(n):
+        R = point_add(R, P)
+    return R
+
+def find_all_points():
+    points = []
+    for x in range(p):
+        for y in range(p):
+            if is_on_curve(x, y):
+                points.append((x, y))
+    return points
+
+def compute_order(P):
+    R = P
+    order = 1
+    while True:
+        R = point_add(R, P)
+        order += 1
+        if R is None:
+            break
+    return order
+
+curve_points = find_all_points()
+print(f"\n# Total valid points on curve: {len(curve_points)}")
+print("# List of all points on the curve with their order:\n")
+
+point_orders = {}
+for idx, pt in enumerate(curve_points):
+    order = compute_order(pt)
+    point_orders[pt] = order
+    print(f"{idx+1:3d}. Point: {str(pt):20} Order: {order}")
+
+
+gx = int(input("\nEnter x-coordinate of generator G: "))
+gy = int(input("Enter y-coordinate of generator G: "))
+G = (gx, gy)
+
+if not is_on_curve(gx, gy):
+    raise ValueError(f"Point G = {G} is not on the curve!")
+
+order = point_orders.get(G, compute_order(G))
+print(f"\n✅ Generator G = {G} is on the curve and has order {order}")
+
+alice_priv = 7
+bob_priv = 9
+
+
+alice_pub = scalar_mult(alice_priv, G)
+bob_pub = scalar_mult(bob_priv, G)
+
+
+shared_secret_alice = scalar_mult(alice_priv, bob_pub)
+shared_secret_bob = scalar_mult(bob_priv, alice_pub)
+
+print("\n# === ECC Key Exchange Summary ===")
+print("Alice's private key:", alice_priv)
+print("Bob's private key:  ", bob_priv)
+print("Alice's public key (a*G):", alice_pub)
+print("Bob's public key (b*G):  ", bob_pub)
+print("Shared secret (Alice computes a*B):", shared_secret_alice)
+print("Shared secret (Bob computes b*A):  ", shared_secret_bob)
+print("Shared secret match?", shared_secret_alice == shared_secret_bob)

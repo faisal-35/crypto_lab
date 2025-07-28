@@ -1,0 +1,42 @@
+B = 8 
+
+
+def padd(text):
+    padd_length  = B - (len(text) % B)
+    return text + bytes([padd_length] * padd_length)
+
+def unpadd(text):
+    padd_length = text[-1]
+    return text[:-padd_length]
+
+def xor_block(block, key):
+    return bytes([block[i] ^ key[i % len(key)] for i in range(B)])
+
+def ecb_encrypt(key, plaintext):
+    padded = padd(plaintext)
+    ciphertext = b""
+
+    for i in range(0, len(padded), B):
+        block = padded[i:i+B]
+        ciphertext += xor_block(block, key)
+
+    return ciphertext
+
+def ecb_decrypt(key, ciphertext):
+    plaintext = b""
+
+    for i in range(0, len(ciphertext), B):
+        block = ciphertext[i:i+B]
+        plaintext += xor_block(block, key)
+
+    return unpadd(plaintext)
+
+print("\nECB Mode Encryption/Decryption Example")
+text = b"Hello, World!"
+key = b"secret"
+
+ciphertext = ecb_encrypt(key, text)
+print("Ciphertext:", ciphertext)
+
+plaintext = ecb_decrypt(key, ciphertext)
+print("Decrypted plaintext:", plaintext)

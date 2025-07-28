@@ -1,0 +1,50 @@
+B = 8  
+
+
+def padd(data):
+    pad_len = B - len(data) % B
+    return data + bytes([pad_len] * pad_len)
+
+
+def unpadd(data):
+    pad_len = data[-1]
+    return data[:-pad_len]
+
+def xor_block(block1, block2):
+    return bytes([b1 ^ b2 for b1, b2 in zip(block1, block2)])
+
+def cbc_encrypt(key, plaintext, iv):
+    padded = padd(plaintext)
+    ciphertext = b""
+    prev = iv
+
+    for i in range(0, len(padded), B):
+        block = padded[i:i+B]
+        pre_encrypted = xor_block(block, prev)
+        encrypted = xor_block(pre_encrypted, key.ljust(B, b'\x00'))  # Ensure key is block-sized
+        ciphertext += encrypted
+        prev = encrypted
+    return ciphertext
+
+def cbc_decrypt(key, ciphertext, iv):
+    plaintext = b""
+    prev = iv
+
+    for i in range(0, len(ciphertext), B):
+        block = ciphertext[i:i+B]
+        pre_decrypted = xor_block(block, key.ljust(B, b'\x00'))  # Ensure key is block-sized
+        decrypted = xor_block(pre_decrypted, prev)
+        plaintext += decrypted
+        prev = block
+    return unpadd(plaintext)
+
+print("\nCBC Mode Encryption/Decryption Example")
+iv = b"initvect"     # 8-byte IV
+text = b"Hello, World!"
+key = b"secret"      # 6-byte key
+
+ciphertext = cbc_encrypt(key, text, iv)
+print("Ciphertext:", ciphertext)
+
+plaintext = cbc_decrypt(key, ciphertext, iv)
+print("Decrypted plaintext:", plaintext)

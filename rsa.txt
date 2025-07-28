@@ -1,0 +1,60 @@
+def mod_inverse(e, phi):
+    
+    def egcd(a, b):
+        if a == 0:
+            return (b, 0, 1)
+        else:
+            g, y, x = egcd(b % a, a)
+            return (g, x - (b // a) * y, y)
+    
+    g, x, y = egcd(e, phi)
+    if g != 1:
+        raise Exception('Modular inverse does not exist')
+    else:
+        return x % phi
+
+
+p = 1051
+q = 863
+e = 6521
+n = p * q
+phi = (p - 1) * (q - 1)
+
+d = mod_inverse(e, phi)
+
+print(f"Private Key PR = {{{d}, {n}}}")
+
+
+C = 821002
+M = pow(C, d, n)
+print(f"Decrypted number M = {M}")
+
+
+def number_to_text(m_num):
+    m_str = str(m_num).zfill((len(str(m_num)) + 1) // 2 * 2)  
+    text = ""
+    for i in range(0, len(m_str), 2):
+        num = int(m_str[i:i+2])
+        if num == 27:
+            text += ' '
+        else:
+            text += chr(ord('A') + num - 1)
+    return text
+
+decrypted_text = number_to_text(M)
+print(f"Decrypted Message = {decrypted_text}")
+
+
+def text_to_number(text):
+    num_str = ""
+    for ch in text.upper():
+        if ch == ' ':
+            num_str += "27"
+        else:
+            num_str += str(ord(ch) - ord('A') + 1).zfill(2)
+    return int(num_str)
+
+initials = decrypted_text  
+m_number = text_to_number(initials)
+re_encrypted = pow(m_number, e, n)
+print(f"Encrypted Initials (C) = {re_encrypted}")

@@ -1,0 +1,183 @@
+ #ecc message 
+
+p = 97 
+a = 2
+b = 3
+
+def mod_inverse(k, p):
+    for i in range(1, p):
+        if (k * i) % p == 1:
+            return i
+    return None
+
+def is_on_curve(x, y):
+    return (y * y) % p == (x ** 3 + a * x + b) % p
+
+def point_add(P, Q):
+    if P is None: return Q
+    if Q is None: return P
+
+    x1, y1 = P
+    x2, y2 = Q
+
+    if x1 == x2 and y1 != y2:
+        return None
+
+    if x1 == x2 and y1 == y2:
+        s_num = (3 * x1 * x1 + a) % p
+        s_den = (2 * y1) % p
+    else:
+        s_num = (y2 - y1) % p
+        s_den = (x2 - x1) % p
+
+    inv = mod_inverse(s_den, p)
+    if inv is None: return None
+
+    s = (s_num * inv) % p
+    x3 = (s * s - x1 - x2) % p
+    y3 = (s * (x1 - x3) - y1) % p
+
+    return (x3, y3)
+
+def scalar_mult(n, P):
+    R = None
+    for _ in range(n):
+        R = point_add(R, P)
+    return R
+
+def point_neg(P):
+    if P is None:
+        return None
+    x, y = P
+    return (x, (-y) % p)
+
+def point_sub(P, Q):
+    return point_add(P, point_neg(Q))
+
+def find_all_points():
+    points = []
+    for x in range(p):
+        for y in range(p):
+            if is_on_curve(x, y):
+                points.append((x, y))
+    return points
+
+def compute_order(P):
+    R = P
+    order = 1
+    while True:
+        R = point_add(R, P)
+        order += 1
+        if R is None:
+            break
+    return order
+
+def find_best_generator(points):
+    best_P = None
+    max_order = 0
+
+    print("\n# === Curve Points and Their Orders ===")
+    for P in points:
+        order = compute_order(P)
+        print(f"Point {P} has order {order}")
+        if order > max_order:
+            max_order = order
+            best_P = P
+
+    print(f"\nSuggested best generator point: {best_P} (order {max_order})")
+    return best_P, max_order
+
+
+def generate_letter_mapping(G):
+    alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    mapping = {}
+    for i in range(len(alpha)):
+        pt = scalar_mult(i + 1, G)
+        mapping[alpha[i]] = pt
+    return mapping
+
+def reverse_mapping(mapping):
+    return {v: k for k, v in mapping.items()}
+
+
+def encode_message(text, mapping):
+    encoded = []
+    letter_positions = []
+
+    for i, ch in enumerate(text):
+        if ch in mapping:
+            encoded.append(mapping[ch])
+            letter_positions.append(i)
+
+    return encoded, letter_positions
+
+def decode_points(cipher_points, letter_positions, rev_map, original_text):
+    result = list(original_text)
+
+    for i, pt in enumerate(cipher_points):
+        if pt in rev_map:
+            pos = letter_positions[i]
+            result[pos] = rev_map[pt]
+
+    return "".join(result)
+
+def encrypt(points, shared_secret):
+    return [point_add(pt, shared_secret) for pt in points]
+
+def decrypt(ciphertext, shared_secret):
+    return [point_sub(ct, shared_secret) for ct in ciphertext]
+
+curve_points = find_all_points()
+print("Total points on curve:", len(curve_points))
+
+_, _ = find_best_generator(curve_points)
+
+
+print("\n# === Manual Generator Selection ===")
+gx = int(input("Enter x-coordinate of generator G: "))
+gy = int(input("Enter y-coordinate of generator G: "))
+G = (gx, gy)
+
+if not is_on_curve(gx, gy):
+    raise ValueError(f"Point G = {G} is not on the curve!")
+
+G_order = compute_order(G)
+print(f"Chosen generator G = {G} (order {G_order})")
+
+letter_map = generate_letter_mapping(G)
+rev_letter_map = reverse_mapping(letter_map)
+
+
+alice_priv = 7
+bob_priv = 9
+
+alice_pub = scalar_mult(alice_priv, G)
+bob_pub = scalar_mult(bob_priv, G)
+
+print("\n# === Key Generation ===")
+print("Alice private key:", alice_priv)
+print("Bob private key:  ", bob_priv)
+print("Alice computes her public key: A = a * G =", alice_pub)
+print("Bob computes his public key:   B = b * G =", bob_pub)
+
+shared_secret_alice = scalar_mult(alice_priv, bob_pub)
+shared_secret_bob = scalar_mult(bob_priv, alice_pub)
+
+print("\n# === Shared Secret Computation ===")
+print("Alice computes: s = a * B =", shared_secret_alice)
+print("Bob computes:   s = b * A =", shared_secret_bob)
+print("Shared secret (should match):", shared_secret_alice == shared_secret_bob)
+
+shared_secret = shared_secret_alice
+
+
+plaintext = "Hello there! How are you doing today?"
+print("\nPlaintext:", plaintext)
+
+encoded_points, positions = encode_message(plaintext, letter_map)
+cipher_points = encrypt(encoded_points, shared_secret)
+print("Encrypted points:", cipher_points)
+
+decrypted_points = decrypt(cipher_points, shared_secret)
+decrypted_text = decode_points(decrypted_points, positions, rev_letter_map, plaintext)
+print("Decrypted text:", decrypted_text)

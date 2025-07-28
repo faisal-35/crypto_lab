@@ -1,0 +1,16 @@
+q=int(input("enter the prime number :"))
+a=int(input("enter the primitive root :"))
+Xa=int(input("enter the alice private key :"))
+Xb=int(input("enter the bob private key :"))
+ya=pow(a,Xa,q)
+yb=pow(a,Xb,q)
+ka=pow(ya,Xb,q)
+kb=pow(yb,Xa,q)
+print('alice public key:',ya)
+print('bob public key:',yb)
+print('alice shared key:',ka)
+print('bob shared key:',kb)
+if(ka==kb):
+    print('shared key successfully established')
+else:
+    print('secrect key do nat matched')

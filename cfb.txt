@@ -1,0 +1,44 @@
+B = 8  
+
+def xor_block(block1, block2):
+    return bytes([b1 ^ b2 for b1, b2 in zip(block1, block2)])
+
+def cfb_encrypt(key, plaintext, iv):
+    ciphertext = b""
+    prev = iv
+
+    for i in range(0, len(plaintext), B):
+        block = plaintext[i:i+B]
+
+        
+        if len(block) < B:
+            block += b' ' * (B - len(block))
+
+        pre_encrypted = xor_block(prev, key)
+        encrypted = xor_block(block, pre_encrypted)
+        ciphertext += encrypted
+        prev = encrypted
+
+    return ciphertext
+
+def cfb_decrypt(key, ciphertext, iv):
+    plaintext = b""
+    prev = iv
+
+    for i in range(0, len(ciphertext), B):
+        block = ciphertext[i:i+B]
+        pre_decrypted = xor_block(prev, key)
+        decrypted = xor_block(block, pre_decrypted)
+        plaintext += decrypted
+        prev = block
+
+    return plaintext.rstrip(b' ')  
+print("\nCFB Mode Encryption/Decryption Example")
+iv = b"initialv"  
+text = b"Hello, World!"
+key = b"mysecret" 
+ciphertext = cfb_encrypt(key, text, iv)
+print("Ciphertext:", ciphertext)
+
+plaintext = cfb_decrypt(key, ciphertext, iv)
+print("Decrypted plaintext:", plaintext)
